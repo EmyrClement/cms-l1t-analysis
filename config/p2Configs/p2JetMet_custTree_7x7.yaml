@@ -1,0 +1,96 @@
+# Uses custom PhaseIPFJetTree 
+version: 1
+name: 'Jet Met MC Studies'
+
+input:
+  files:
+      # ttbar MC
+       # - /eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/bundocka/cmsl1t/p2jets.root
+        # - /storage/ec6821/L1TJets/Analysis/cms-l1t-analysis/p2jets.root
+      - /storage/ec6821/L1TJets/Emulator/CMSSW_10_6_1_patch2/src/L1Trigger/L1CaloTrigger/test/L1Ntuple_7x7.root
+  sample:
+    name: ttbar
+    title: MC
+  trigger:
+    name: P1Tree
+    title: PF
+  pileup_file: ""
+  run_number:
+  ntuple_map_file: config/ntuple_content_mc_p2.yaml
+
+analysis:
+  load_trees:
+    - p2Upgrade
+    # - p2UpgradeEmu
+
+  do_fit: True
+  pu_type: 0PU24,25PU49,50PU
+  pu_bins: [0,25,50,999]
+  thresholds:
+    HT:           [354]
+    METBE:        [103]
+    METHF:        [103]
+    JetET_BE:     [121]
+    JetET_Barrel: [121]
+    JetET_EndcapWithTracks: [121]
+    JetET_EndcapNoTracks: [121]
+    JetET_HF:     [110]
+
+  analyzers:
+     jetMet_analyzer:
+       module: cmsl1t.analyzers.jetMet_analyzer
+  producers:
+    l1Jets:
+      module: cmsl1t.producers.jets
+      inputs:
+        - L1PhaseIPFJet_phaseIPFJetEt
+        - L1PhaseIPFJet_phaseIPFJetEta
+        - L1PhaseIPFJet_phaseIPFJetPhi
+      jetType: L1
+      filter: null
+      outputs:
+        - l1Jets
+    # l1EmuJets:
+    #   module: cmsl1t.producers.jets
+    #   inputs:
+    #     - L1PhaseIPFJet_ak4PFJetEt
+    #     - L1PhaseIPFJet_ak4PFJetEta
+    #     - L1PhaseIPFJet_ak4PFJetPhi
+    #   jetType: L1
+    #   outputs:
+    #     - l1EmuJets
+    goodGenJets:
+      module: cmsl1t.producers.jets
+      inputs:
+        - L1PhaseIPFJet_genJetPt
+        - L1PhaseIPFJet_genJetEta
+        - L1PhaseIPFJet_genJetPhi
+      jetType: Gen
+      outputs:
+        - goodGenJets
+    genSums:
+      module: cmsl1t.producers.gensums_custTree
+      inputs:
+        - L1PhaseIPFJet_genJetHt
+        - L1PhaseIPFJet_genMet
+      outputs:
+        - genSums
+    l1Sums:
+      module: cmsl1t.producers.l1p2sums_custTree
+      inputs:
+        - L1PhaseIPFJet_phaseIPFJetHt
+        - L1PhaseIPFJet_phaseIPFJetMET
+      outputs:
+        - l1Sums
+    # l1EmuSums:
+    #   module: cmsl1t.producers.l1p2sums_custTree
+    #   inputs:
+    #     - L1PhaseIPFJet_ak4PFJetHt
+    #     - L1PhaseIPFJet_pfMet
+    #   outputs:
+    #     - l1EmuSums
+
+output:
+  template:
+     - output/constant_rate_turnons
+     - "{date}/7x7_{sample_name}_{trigger_name}"

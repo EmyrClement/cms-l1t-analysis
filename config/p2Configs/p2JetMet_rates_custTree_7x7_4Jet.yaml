@@ -1,0 +1,95 @@
+version: 1
+name: 'Jet Met Rates'
+
+input:
+  files:
+      # Zero Bias
+       # - /eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/bundocka/cmsl1t/p2jets.root
+      - /storage/ec6821/L1TJets/Emulator/CMSSW_10_6_1_patch2/src/L1Trigger/L1CaloTrigger/test/L1Ntuple_Snu_7x7.root
+
+  sample:
+    name: nuGun
+    title: MC
+  trigger:
+    name: P1Tree
+    title: PF
+  pileup_file: ""
+  run_number:
+  ntuple_map_file: config/ntuple_content_mc_p2.yaml
+
+analysis:
+  load_trees:
+    - p2Upgrade
+
+  do_fit: True
+  pu_type: 0PU
+  pu_bins: [0, 999]
+  thresholds:
+    HT:           [200, 400]
+    METBE:        [80, 150]
+    METHF:        [80, 150]
+    JetET_BE:     [100, 200]
+    JetET_HF:     [100, 200]
+    JetET_Barrel:     [100, 200]
+    JetET_Barrel_Emu: [100, 200]
+    JetET_EndcapWithTracks:     [100, 200]
+    JetET_EndcapWithTracks_Emu: [100, 200]
+    JetET_EndcapNoTracks:     [100, 200]
+    JetET_EndcapNoTracks_Emu: [100, 200]
+# these are the fixed rates we want to use to
+# compare different emulations at different
+# thresholds that give this rate, from TDR Menu
+  rates:
+    HT:           11 #kHz
+    METBE:        18
+    METHF:        18
+    JetET_BE:     70
+    JetET_HF:     3 # guess
+    JetET_Barrel:     70 # Same as BE, so wrong
+    JetET_EndcapWithTracks:     70 # Same as BE, so wrong
+    JetET_EndcapNoTracks:     70 # Same as BE, so wrong
+
+  analyzers:
+     HW_Emu_jetMet_rates:
+        module: cmsl1t.analyzers.HW_Emu_jetMet_rates
+        whichJet: 3
+  producers:
+    l1Jets:
+      module: cmsl1t.producers.jets
+      inputs:
+        - L1PhaseIPFJet_phaseIPFJetEt
+        - L1PhaseIPFJet_phaseIPFJetEta
+        - L1PhaseIPFJet_phaseIPFJetPhi
+      jetType: L1
+      filter: cmsl1t.filters.jets.jetEtaFilter
+      outputs:
+        - l1Jets
+    goodGenJets:
+      module: cmsl1t.producers.jets
+      inputs:
+        - L1PhaseIPFJet_genJetPt
+        - L1PhaseIPFJet_genJetEta
+        - L1PhaseIPFJet_genJetPhi
+      jetType: Gen
+      filter: cmsl1t.filters.jets.jetEtaFilter
+      outputs:
+        - goodGenJets
+    genSums:
+      module: cmsl1t.producers.gensums_custTree
+      inputs:
+        - L1PhaseIPFJet_genJetHt
+        - L1PhaseIPFJet_genMet
+      outputs:
+        - genSums
+    l1Sums:
+      module: cmsl1t.producers.l1p2sums_custTree
+      inputs:
+        - L1PhaseIPFJet_phaseIPFJetHt
+        - L1PhaseIPFJet_phaseIPFJetMET
+      outputs:
+        - l1Sums
+
+output:
+  template:
+     - output/rates
+     - "{date}/7x7_4thJet_{sample_name}_{trigger_name}"
