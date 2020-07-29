@@ -83,6 +83,7 @@ class EfficiencyPlot(BasePlotter):
                 continue
             elif online > threshold:
                 passed = True
+
             efficiency.fill(passed, offline)
 
     def draw(self, with_fits=False):
@@ -102,6 +103,7 @@ class EfficiencyPlot(BasePlotter):
                 continue
             hist = all_pileup_effs.get_bin_contents(threshold)
             hist.drawstyle = EfficiencyPlot.drawstyle_data
+            hist.SetLineWidth(10)
             self._dynamic_bin(hist)
             hists.append(hist)
 
@@ -113,6 +115,7 @@ class EfficiencyPlot(BasePlotter):
             if with_fits:
                 fits.append(self.fits.get_bin_contents(
                     [bn.Base.everything, threshold]))
+
         self.__make_overlay(
             "all", "all", hists, fits, labels, self.online_title,
         )
@@ -327,7 +330,8 @@ class EfficiencyPlot(BasePlotter):
         Re-build efficiency plots so that there are no bins with < min_ entries
         """
 
-        min_ = 16
+        # min_ = 16
+        min_ = 64
         total = []
         passed = []
         bins = []
