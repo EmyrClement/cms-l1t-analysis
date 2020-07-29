@@ -24,7 +24,7 @@ class BaseAnalyzer(object):
             os.makedirs(self.output_folder)
         if not os.path.exists(self.plots_folder):
             os.makedirs(self.plots_folder)
-
+            os.makedirs(self.plots_folder+'/DetailledPlots/')
     @property
     def params(self):
         return self.__params

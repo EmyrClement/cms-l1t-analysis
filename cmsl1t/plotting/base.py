@@ -30,7 +30,11 @@ class BasePlotter(object):
             canvas = gPad.func()
         if not name:
             name = canvas.GetName()
-        out_path = "{}/{}.{}".format(self.output_dir, name, self.output_format)
+        out_path = None
+        if ( 'all' in name or 'comparison' in name ) and not 'HiRange' in name and not 'shapes' in name:
+            out_path = "{}/{}.{}".format(self.output_dir, name, self.output_format)
+        else:
+            out_path = "{}/DetailledPlots/{}.{}".format(self.output_dir, name, self.output_format)
         canvas.SaveAs(out_path)
 
     def build(self, *vargs, **kwargs):
