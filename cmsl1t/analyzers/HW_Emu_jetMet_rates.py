@@ -21,7 +21,7 @@ from cmsl1t.utils.hist import normalise_to_collision_rate
 def types(doEmu):
 
     sum_types = ["HT", "METBE", "METHF"]
-    jet_types = ["JetET_BE", "JetET_HF"]
+    jet_types = ["JetET_BE", "JetET_HF", "JetET_Barrel", "JetET_EndcapWithTracks", "JetET_EndcapNoTracks"]
 
     if doEmu:
         sum_types += [t + '_Emu' for t in sum_types]
@@ -52,11 +52,17 @@ ETA_RANGES = dict(
     METHF="|\\eta| < 5.0",
     JetET_BE="|\\eta| < 3.0",
     JetET_HF="3.0 < |\\eta| < 5.0",
+    JetET_Barrel="|\\eta| < 1.5",
+    JetET_EndcapWithTracks="1.5 < |\\eta| < 2.4",
+    JetET_EndcapNoTracks="2.4 < |\\eta| < 3.0",
     HT_Emu="|\\eta| < 2.4",
     METBE_Emu="|\\eta| < 3.0",
     METHF_Emu="|\\eta| < 5.0",
     JetET_BE_Emu="|\\eta| < 3.0",
     JetET_HF_Emu="3.0 < |\\eta| < 5.0",
+    JetET_Barrel_Emu="|\\eta| < 1.5",
+    JetET_EndcapWithTracks_Emu="1.5 < |\\eta| < 2.4",
+    JetET_EndcapNoTracks_Emu="2.4 < |\\eta| < 3.0",
 )
 
 
@@ -88,6 +94,11 @@ class Analyzer(BaseAnalyzer):
         self._lastRunAndLumi = (-1, -1)
         self._processLumi = True
         self._sumTypes, self._jetTypes = types(self._doEmu)
+
+        if 'whichJet' in self.params.keys():
+            self._whichJet = self.params['whichJet']
+        else : 
+            self._whichJet = 0
 
         for name in self._sumTypes + self._jetTypes:
             rates_plot = RatesPlot(name)
@@ -160,7 +171,10 @@ class Analyzer(BaseAnalyzer):
         l1JetEts = [jet.et for jet in event.l1Jets]
         nJets = len(l1JetEts)
         if nJets > 0:
-            maxL1JetEt = max(l1JetEts)
+            if ( nJets > self._whichJet ):
+                maxL1JetEt = sorted(l1JetEts)[self._whichJet]
+            else:
+                maxL1JetEt = 0
         else:
             maxL1JetEt = 0.
 
@@ -176,10 +190,18 @@ class Analyzer(BaseAnalyzer):
         l1BEJets = [jet for jet in event.l1Jets if abs(jet.eta) < 3.0]
         l1BEJetEts = [beJet.et for beJet in l1BEJets]
         nBEJets = len(l1BEJets)
+        # if nBEJets > 0:
+        #     maxL1BEJetEt = max(l1BEJetEts)
+        # else:
+        #     maxL1BEJetEt = 0.
         if nBEJets > 0:
-            maxL1BEJetEt = max(l1BEJetEts)
+            if ( nBEJets > self._whichJet ):
+                maxL1BEJetEt = sorted(l1BEJetEts, reverse=True)[self._whichJet]
+            else:
+                maxL1BEJetEt = 0
         else:
             maxL1BEJetEt = 0.
+
 
         if self._doEmu:
             l1EmuBEJets = [jet for jet in event.l1EmuJets if abs(jet.eta) < 3.0]
@@ -189,6 +211,60 @@ class Analyzer(BaseAnalyzer):
                 maxL1EmuBEJetEt = max(l1EmuBEJetEts)
             else:
                 maxL1EmuBEJetEt = 0.
+
+        # Barrel Jets:
+        l1BarrelJets = [jet for jet in event.l1Jets if abs(jet.eta) < 1.5]
+        l1BarrelJetEts = [BarrelJet.et for BarrelJet in l1BarrelJets]
+        nBarrelJets = len(l1BarrelJets)
+        if nBarrelJets > 0:
+            maxL1BarrelJetEt = max(l1BarrelJetEts)
+        else:
+            maxL1BarrelJetEt = 0.
+
+        if self._doEmu:
+            l1EmuBarrelJets = [jet for jet in event.l1EmuJets if abs(jet.eta) < 1.5]
+            l1EmuBarrelJetEts = [BarrelJet.et for BarrelJet in l1EmuBarrelJets]
+            nEmuBarrelJets = len(l1EmuBarrelJetEts)
+            if nEmuBarrelJets > 0:
+                maxL1EmuBarrelJetEt = max(l1EmuBarrelJetEts)
+            else:
+                maxL1EmuBarrelJetEt = 0.
+
+        # Endcap with tracks Jets:
+        l1EndcapWithTracksJets = [jet for jet in event.l1Jets if ( abs(jet.eta) > 1.5 and abs(jet.eta) < 2.4 ) ]
+        l1EndcapWithTracksJetEts = [EndcapJet.et for EndcapJet in l1EndcapWithTracksJets]
+        nEndcapWithTracksJets = len(l1EndcapWithTracksJets)
+        if nEndcapWithTracksJets > 0:
+            maxL1EndcapWithTracksJetEt = max(l1EndcapWithTracksJetEts)
+        else:
+            maxL1EndcapWithTracksJetEt = 0.
+
+        if self._doEmu:
+            l1EmuEndcapWithTracksJets = [jet for jet in event.l1EmuJets if ( abs(jet.eta) > 1.5 and abs(jet.eta) < 2.4 ) ]
+            l1EmuEndcapWithTracksJetEts = [EndcapJet.et for EndcapJet in l1EmuEndcapWithTracksJets]
+            nEmuEndcapWithTracksJets = len(l1EmuEndcapWithTracksJetEts)
+            if nEmuEndcapWithTracksJets > 0:
+                maxL1EmuEndcapWithTracksJetEt = max(l1EmuEndcapWithTracksJetEts)
+            else:
+                maxL1EmuEndcapWithTracksJetEt = 0.
+
+        # Endcap without tracks Jets:
+        l1EndcapNoTracksJets = [jet for jet in event.l1Jets if ( abs(jet.eta) > 2.4 and abs(jet.eta) < 3.0 ) ]
+        l1EndcapNoTracksJetEts = [EndcapJet.et for EndcapJet in l1EndcapNoTracksJets]
+        nEndcapNoTracksJets = len(l1EndcapNoTracksJets)
+        if nEndcapNoTracksJets > 0:
+            maxL1EndcapNoTracksJetEt = max(l1EndcapNoTracksJetEts)
+        else:
+            maxL1EndcapNoTracksJetEt = 0.
+
+        if self._doEmu:
+            l1EmuEndcapNoTracksJets = [jet for jet in event.l1EmuJets if ( abs(jet.eta) > 2.4 and abs(jet.eta) < 3.0 ) ]
+            l1EmuEndcapNoTracksJetEts = [EndcapJet.et for EndcapJet in l1EmuEndcapNoTracksJets]
+            nEmuEndcapNoTracksJets = len(l1EmuEndcapNoTracksJetEts)
+            if nEmuEndcapNoTracksJets > 0:
+                maxL1EmuEndcapNoTracksJetEt = max(l1EmuEndcapNoTracksJetEts)
+            else:
+                maxL1EmuEndcapNoTracksJetEt = 0.
 
         # Forward Jets
         l1HFJets = [jet for jet in event.l1Jets if abs(jet.eta) > 3.0]
@@ -214,6 +290,18 @@ class Analyzer(BaseAnalyzer):
                     getattr(self, name + '_rates').fill(pileup, maxL1EmuBEJetEt)
                     getattr(self, name + '_rate_vs_pileup').fill(pileup,
                                                                  maxL1EmuBEJetEt)
+                elif 'Barrel' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1EmuBarrelJetEt)
+                    getattr(self, name + '_rate_vs_pileup').fill(pileup,
+                                                                 maxL1EmuBarrelJetEt)
+                elif 'EndcapWithTracks' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1EmuEndcapWithTracksJetEt)
+                    getattr(self, name + '_rate_vs_pileup').fill(pileup,
+                                                                 maxL1EmuEndcapWithTracksJetEt)
+                elif 'EndcapNoTracks' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1EmuEndcapNoTracksJetEt)
+                    getattr(self, name + '_rate_vs_pileup').fill(pileup,
+                                                                 maxL1EmuEndcapNoTracksJetEt)
                 elif 'HF' in name:
                     getattr(self, name + '_rates').fill(pileup, maxL1EmuHFJetEt)
                     getattr(self, name + '_rate_vs_pileup').fill(pileup,
@@ -227,6 +315,18 @@ class Analyzer(BaseAnalyzer):
                     getattr(self, name + '_rates').fill(pileup, maxL1BEJetEt)
                     getattr(self,
                             name + '_rate_vs_pileup').fill(pileup, maxL1BEJetEt)
+                elif 'Barrel' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1BarrelJetEt)
+                    getattr(self,
+                            name + '_rate_vs_pileup').fill(pileup, maxL1BarrelJetEt)
+                elif 'EndcapWithTracks' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1EndcapWithTracksJetEt)
+                    getattr(self,
+                            name + '_rate_vs_pileup').fill(pileup, maxL1EndcapWithTracksJetEt)
+                elif 'EndcapNoTracks' in name:
+                    getattr(self, name + '_rates').fill(pileup, maxL1EndcapNoTracksJetEt)
+                    getattr(self,
+                            name + '_rate_vs_pileup').fill(pileup, maxL1EndcapNoTracksJetEt)
                 elif 'HF' in name:
                     getattr(self, name + '_rates').fill(pileup, maxL1HFJetEt)
                     getattr(self,

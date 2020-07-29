@@ -31,7 +31,7 @@ def types(doEmu, doReco, doGen):
                           "pfJetET_BE", "pfJetET_HF"])
     if doGen:
         sum_types.extend(["genHT", "genMETHF", "genMETBE"])
-        jet_types.extend(["genJetET_BE", "genJetET_HF"])
+        jet_types.extend(["genJetET_BE", "genJetET_HF", "genJetET_Barrel", "genJetET_EndcapWithTracks", "genJetET_EndcapNoTracks"])
 
     if doEmu:
         sum_types += [t + '_Emu' for t in sum_types]
@@ -48,6 +48,9 @@ ETA_RANGES = dict(
     METHF="|\\eta| < 5.0",
     JetET_BE="|\\eta| < 3.0",
     JetET_HF="3.0 < |\\eta| < 5.0",
+    JetET_Barrel="|\\eta| < 1.5",
+    JetET_EndcapWithTracks="1.5 < |\\eta| < 2.4",
+    JetET_EndcapNoTracks="2.4 < |\\eta| < 3.0",
 )
 
 ALL_THRESHOLDS = dict(
@@ -152,6 +155,11 @@ class Analyzer(BaseAnalyzer):
         self._sumTypes, self._jetTypes = types(
             self._doEmu, self._doReco, self._doGen)
 
+        if 'whichJet' in self.params.keys():
+            self._whichJet = self.params['whichJet']
+        else : 
+            self._whichJet = 0
+
         for name in self._sumTypes:
             eff_plot = EfficiencyPlot("L1", "offline_" + name)
             res_plot = ResolutionPlot("energy", "L1", "offline_" + name)
@@ -185,12 +193,18 @@ class Analyzer(BaseAnalyzer):
         for name in self._jetTypes:
             eff_plot = EfficiencyPlot("L1", "offline_" + name)
             res_plot = ResolutionPlot("energy", "L1", "offline_" + name)
+            resPhi_plot = ResolutionPlot("phi", "L1", "offline_" + name + "Phi")
+            resEta_plot = ResolutionPlot("eta", "L1", "offline_" + name + "Eta")
             twoD_plot = OnlineVsOffline("L1", "offline_" + name)
             self.register_plotter(eff_plot)
             self.register_plotter(res_plot)
+            self.register_plotter(resPhi_plot)
+            self.register_plotter(resEta_plot)
             self.register_plotter(twoD_plot)
             setattr(self, name + "_eff", eff_plot)
             setattr(self, name + "_res", res_plot)
+            setattr(self, name + "_resPhi", resPhi_plot)
+            setattr(self, name + "_resEta", resEta_plot)
             setattr(self, name + "_2D", twoD_plot)
 
             eff_plot_HR = EfficiencyPlot("L1", "offline_" + name + "_HiRange")
@@ -240,6 +254,12 @@ class Analyzer(BaseAnalyzer):
                        "L1 Jet ET", 20, 420),
                 Config("genJetET_HF", "Forward Gen Jet ET",
                        "L1 Jet ET", 20, 420),
+                Config("genJetET_Barrel", "Barrel Gen Jet ET",
+                       "L1 Jet ET", 20, 420),
+                Config("genJetET_EndcapWithTracks", "Endcap (with tracks) Gen Jet ET",
+                       "L1 Jet ET", 20, 420),
+                Config("genJetET_EndcapNoTracks", "Endcap (no tracks) Gen Jet ET",
+                       "L1 Jet ET", 20, 420),
             ])
             cfgs.extend([
                 Config("genHT", "Gen HT", "L1 HT", 30, 830),
@@ -285,7 +305,6 @@ class Analyzer(BaseAnalyzer):
             allThresholds = ALL_THRESHOLDS
 
         for cfg in cfgs:
-
             eff_plot = getattr(self, cfg.name + prefix + "_eff" + suffix)
             twoD_plot = getattr(self, cfg.name + prefix + "_2D" + suffix)
 
@@ -345,6 +364,15 @@ class Analyzer(BaseAnalyzer):
             res_plot.build(cfg.on_title, cfg.off_title,
                            puBins, 150, -3, 3, legend_title=etaRange)
 
+            if 'JetET' in cfg.name:
+                resPhi_plot = getattr(self, cfg.name + prefix + "_resPhi" + suffix)
+                resPhi_plot.build(cfg.on_title + 'Phi', cfg.off_title + 'Phi',
+                               puBins, 150, -0.5, 0.5, legend_title=etaRange)
+
+                resEta_plot = getattr(self, cfg.name + prefix + "_resEta" + suffix)
+                resEta_plot.build(cfg.on_title + 'Eta', cfg.off_title + 'Eta',
+                               puBins, 150, -0.5, 0.5, legend_title=etaRange)
+
             if not hasattr(self, cfg.name + prefix + "_phi_res"):
                 continue
             res_plot = getattr(self, cfg.name + prefix + "_phi_res")
@@ -396,6 +424,7 @@ class Analyzer(BaseAnalyzer):
                 pileup = recoNVtx
                 if 'gen' in name:
                     pileup = genNVtx
+
                 getattr(self, name + suffix).fill(pileup, off.et, on.et)
             if hasattr(self, name + "_phi_res"):
                 getattr(self, name + "_phi_res").fill(pileup, off.phi, on.phi)
@@ -426,22 +455,46 @@ class Analyzer(BaseAnalyzer):
         if self._doGen:
             leadingGenJet = None
             if event.goodGenJets:
-                leadingGenJet = event.goodGenJets[0]
+                if len(event.goodGenJets) >= self._whichJet + 1: 
+                    leadingGenJet = event.goodGenJets[self._whichJet]
 
             if leadingGenJet:
 
                 genFillRegions = []
                 if abs(leadingGenJet.eta) < 3.0:
                     genFillRegions = ['BE']
+                    if abs(leadingGenJet.eta) < 1.5 : 
+                        genFillRegions.append('Barrel')
+                    elif abs(leadingGenJet.eta) < 3.0 :
+                        # genFillRegions.append('Endcap')
+                        if abs(leadingGenJet.eta) < 2.4 :
+                            genFillRegions.append('EndcapWithTracks')
+                        elif abs(leadingGenJet.eta) < 3.0 :
+                            genFillRegions.append('EndcapNoTracks')
                 else:
                     genFillRegions = ['HF']
 
                 if self._doEmu:
                     genL1EmuJet = match(leadingGenJet, event.l1EmuJets)
+
+                    # Only keep events where all gen jets up to self._whichJet are found
+                    if self._whichJet > 0 :
+                        for i in range(self._whichJet+1):
+                            harderEmuJetMatch = match( event.goodGenJets[i], event.l1EmuJets )
+                            if not harderEmuJetMatch:
+                                genL1EmuJet = None
+
+                    genL1EmuJetEt = None
+                    genL1EmuJetPhi = None
+                    genL1EmuJetEta = None
                     if genL1EmuJet:
                         genL1EmuJetEt = genL1EmuJet.et
+                        genL1EmuJetPhi = genL1EmuJet.phi
+                        genL1EmuJetEta = genL1EmuJet.eta
                     else:
                         genL1EmuJetEt = 0.
+                        genL1EmuJetPhi = None
+                        genL1EmuJetEta = None
 
                     for region in genFillRegions:
                         for suffix in ['_eff', '_res', '_2D', '_eff_HR', '_2D_HR']:
@@ -451,12 +504,34 @@ class Analyzer(BaseAnalyzer):
                             getattr(self, name).fill(
                                 genNVtx, leadingGenJet.etCorr, genL1EmuJetEt,
                             )
+                        for suffix in ['_resPhi', '_resEta']:
+                            if '_res' in suffix and (genL1EmuJetEt == 0 or leadingGenJet.etCorr < 30):
+                                continue
+                            name = 'genJetET_{0}_Emu{1}'.format(region, suffix)
+                            if 'Phi' in suffix:
+                                getattr(self, name).fill(
+                                    genNVtx, leadingGenJet.phi, genL1EmuJetPhi,
+                                )
+                            elif 'Eta' in suffix:
+                                getattr(self, name).fill(
+                                    genNVtx, leadingGenJet.eta, genL1EmuJetEta,
+                                )
 
                 genL1Jet = match(leadingGenJet, event.l1Jets)
+
+                genL1JetEt = None
+                genL1JetPhi = None
+                genL1JetEta = None
                 if genL1Jet:
                     genL1JetEt = genL1Jet.et
+                    genL1JetPhi = genL1Jet.phi
+                    genL1JetEta = genL1Jet.eta
                 else:
                     genL1JetEt = 0.
+                    genL1JetPhi = None
+                    genL1JetEta = None
+                    # if ( leadingGenJet.et > 500 ) :
+                    #     print ("Didn't find a matching gen jet : ", leadingGenJet.et)
 
                 for region in genFillRegions:
                     for suffix in ['_eff', '_res', '_2D', '_eff_HR', '_2D_HR']:
@@ -467,17 +542,39 @@ class Analyzer(BaseAnalyzer):
                             genNVtx, leadingGenJet.etCorr, genL1JetEt,
                         )
 
+                    for suffix in ['_resPhi', '_resEta']:
+                        if '_res' in suffix and (genL1JetEt == 0 or leadingGenJet.etCorr < 30):
+                            continue
+                        name = 'genJetET_{0}{1}'.format(region, suffix)
+                        if 'Phi' in suffix:
+                            getattr(self, name).fill(
+                                genNVtx, leadingGenJet.phi, genL1JetPhi,
+                            )
+                        elif 'Eta' in suffix:
+                            getattr(self, name).fill(
+                                genNVtx, leadingGenJet.eta, genL1JetEta,
+                            )
+
+
         if self._doReco:
             leadingPFJet, leadingCaloJet = None, None
             if event.goodPFJets:
-                leadingPFJet = event.goodPFJets[0]
+                if len(event.goodPFJets) >= self._whichJet + 1: leadingPFJet = event.goodPFJets[self._whichJet]
             if event.caloJets:
-                leadingCaloJet = event.caloJets[0]
+                if len(event.caloJets) >= self._whichJet + 1: leadingCaloJet = event.caloJets[self._whichJet]
 
             if leadingPFJet and leadingPFJet.etCorr > 20:
                 pfFillRegions = []
                 if abs(leadingPFJet.eta) < 3.0:
                     pfFillRegions = ['BE']
+                    if abs(leadingPFJet.eta) < 1.5 : 
+                        pfFillRegions.append('Barrel')
+                    elif abs(leadingPFJet.eta) < 3.0 :
+                        # pfFillRegions.append('Endcap')
+                        if abs(leadingPFJet.eta) < 2.4 :
+                            pfFillRegions.append('EndcapWithTracks')
+                        elif abs(leadingPFJet.eta) < 3.0 :
+                            pfFillRegions.append('EndcapNoTracks')
                 else:
                     pfFillRegions = ['HF']
 
@@ -517,6 +614,14 @@ class Analyzer(BaseAnalyzer):
                 caloFillRegions = []
                 if abs(leadingCaloJet.eta) < 3.0:
                     caloFillRegions = ['BE']
+                    if abs(leadingCaloJet.eta) < 1.5 : 
+                        caloFillRegions.append('Barrel')
+                    elif abs(leadingCaloJet.eta) < 3.0 :
+                        caloFillRegions.append('Endcap')
+                        if abs(leadingCaloJet.eta) < 2.4 :
+                            caloFillRegions.append('EndcapWithTracks')
+                        elif abs(leadingCaloJet.eta) < 3.0 :
+                            caloFillRegions.append('EndcapNoTracks')
                 else:
                     caloFillRegions = ['HF']
 
@@ -580,12 +685,15 @@ class Analyzer(BaseAnalyzer):
 
         if self._doGen:
 
-            plot_names = ['genJetET_BE', 'genJetET_HF', 'genHT', 'genMETBE', 'genMETHF']
+            plot_names = ['genJetET_BE', 'genJetET_HF', 'genJetET_Barrel', 'genJetET_EndcapWithTracks', 'genJetET_EndcapNoTracks', 'genHT', 'genMETBE', 'genMETHF']
 
         for plot_name in plot_names:
             getattr(self, plot_name + '_eff').draw()
             getattr(self, plot_name + '_eff_HR').draw()
             getattr(self, plot_name + '_res').draw()
+            if 'JetET' in plot_name:
+                getattr(self, plot_name + '_resPhi').draw()
+                getattr(self, plot_name + '_resEta').draw()
 
         if self._doEmu:
 
@@ -604,5 +712,12 @@ class Analyzer(BaseAnalyzer):
                 getattr(self, plot_name + '_res').overlay(
                     [getattr(other_analyzer, plot_name + '_res')
                         for other_analyzer in other_analyzers])
+                if 'JetET' in plot_name:
+                    getattr(self, plot_name + '_resPhi').overlay(
+                        [getattr(other_analyzer, plot_name + '_resPhi')
+                            for other_analyzer in other_analyzers])
+                    getattr(self, plot_name + '_resEta').overlay(
+                        [getattr(other_analyzer, plot_name + '_resEta')
+                            for other_analyzer in other_analyzers])
 
         return True
