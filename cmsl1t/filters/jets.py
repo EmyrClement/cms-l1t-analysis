@@ -27,3 +27,12 @@ def _pfJetID(jet):
 
 def pfJetFilter(jets):
     return [jet for jet in jets if _pfJetID(jet)]
+
+def _jetEtaFilter(jet, lowAbsEta, highAbsEta):
+    abs_eta = abs(jet.eta)
+    if abs_eta < lowAbsEta or abs_eta > highAbsEta:
+        return False
+    return True
+
+def jetEtaFilter(jets, lowAbsEta, highAbsEta):
+    return [jet for jet in jets if _jetEtaFilter(jet, lowAbsEta, highAbsEta)]

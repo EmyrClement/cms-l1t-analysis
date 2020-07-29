@@ -8,7 +8,6 @@ from .base import BaseProducer
 
 
 def _load_filter_module(filterPath):
-    print(filterPath)
     if filterPath is None:
         return None
     tokens = filterPath.split('.')
@@ -63,7 +62,7 @@ class Producer(BaseProducer):
         if 'L1' in self._jetType and checkBx:
             jets = [jet for jet in jets if jet.bx == 0]
         if self._jetFilter:
-            jets = self._jetFilter(jets)
+            jets = self._jetFilter(jets, 0., 3.)
 
         # sort by ET, largest first
         sorted_jets = sorted(
