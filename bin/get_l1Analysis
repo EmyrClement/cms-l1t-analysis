@@ -5,7 +5,7 @@ import requests
 
 # should we make this into a parameter
 CMSSW_BRANCH = 'phase2-l1t-integration-CMSSW_10_6_1_patch2'
-BASE_URL = 'https://raw.githubusercontent.com/EmyrClement/cmssw/PhaseIJetSums/L1Trigger/L1TNtuples/interface/'
+BASE_URL = 'https://raw.githubusercontent.com/EmyrClement/cmssw/PhaseIJetSums_EmulatorImprovements/L1Trigger/L1TNtuples/interface/'
 files_to_load = [
     'L1AnalysisBMTFInputsDataFormat.h',
     'L1AnalysisBMTFInputsDataFormat.h',

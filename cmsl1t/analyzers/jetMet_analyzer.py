@@ -26,11 +26,11 @@ def types(doEmu, doReco, doGen):
     jet_types = []
     if doReco:
         sum_types.extend(["caloHT", "pfHT", "caloMETHF",
-                          "caloMETBE", "pfMET_NoMu"])
+                          "caloMETBE", "pfMET_NoMu", "caloMHT", "pfMHT"])
         jet_types.extend(["caloJetET_BE", "caloJetET_HF",
                           "pfJetET_BE", "pfJetET_HF"])
     if doGen:
-        sum_types.extend(["genHT", "genMETHF", "genMETBE"])
+        sum_types.extend(["genHT", "genMETHF", "genMETBE", "genMHT"])
         jet_types.extend(["genJetET_BE", "genJetET_HF", "genJetET_Barrel", "genJetET_EndcapWithTracks", "genJetET_EndcapNoTracks"])
 
     if doEmu:
@@ -57,7 +57,8 @@ ALL_THRESHOLDS = dict(
     HT=[120, 200, 320],
     METBE=[80, 100, 120],
     METHF=[80, 100, 120],
-    JetET=[35, 90, 120]
+    JetET=[35, 90, 120],
+    MHT=[80, 100, 120]
 )
 
 
@@ -71,6 +72,8 @@ def extractSums(event, doEmu, doReco, doGen):
             caloMETBE=Met(event.Sums_caloMetBE, event.Sums_caloMetPhiBE),
             caloMETHF=Met(event.Sums_caloMet, event.Sums_caloMetPhi),
             pfMET_NoMu=Met(event.Sums_pfMetNoMu, event.Sums_pfMetNoMuPhi),
+            caloMHT=EnergySum(event.Sums_caloMht),
+            pfMHT=EnergySum(event.Sums_Mht)
         ))
         online.update(dict(
             caloHT=event.l1Sums_Htt,
@@ -78,6 +81,9 @@ def extractSums(event, doEmu, doReco, doGen):
             caloMETBE=event.l1Sums_Met,
             caloMETHF=event.l1Sums_MetHF,
             pfMET_NoMu=event.l1Sums_MetHF,
+            caloMHT=event.l1Sums_Mht,
+            pfMHT=event.l1Sums_Mht,
+
         ))
         if doEmu:
             offline.update(dict(
@@ -88,6 +94,9 @@ def extractSums(event, doEmu, doReco, doGen):
                 caloMETHF_Emu=Met(event.Sums_caloMet, event.Sums_caloMetPhi),
                 pfMET_NoMu_Emu=Met(event.Sums_pfMetNoMu,
                                    event.Sums_pfMetNoMuPhi),
+                caloMHT_Emu=EnergySum(event.Sums_caloMht),
+                pfMHT_Emu=EnergySum(event.Sums_Mht),
+
             ))
             online.update(dict(
                 caloHT_Emu=event.l1EmuSums_Htt,
@@ -95,6 +104,8 @@ def extractSums(event, doEmu, doReco, doGen):
                 caloMETBE_Emu=event.l1EmuSums_Met,
                 caloMETHF_Emu=event.l1EmuSums_MetHF,
                 pfMET_NoMu_Emu=event.l1EmuSums_MetHF,
+                caloMHT_Emu=event.l1EmuSums_Mht,
+                pfMHT_Emu=event.l1EmuSums_Mht,
             ))
 
     if doGen:
@@ -102,22 +113,26 @@ def extractSums(event, doEmu, doReco, doGen):
             genHT=event.genSums_HT,
             genMETHF=event.genSums_MetHF,
             genMETBE=event.genSums_MetBE,
+            genMHT=event.genSums_MHT,
         ))
         online.update(dict(
             genHT=event.l1Sums_Htt,
             genMETHF=event.l1Sums_MetHF,
             genMETBE=event.l1Sums_Met,
+            genMHT=event.l1Sums_Mht,
         ))
         if doEmu:
             offline.update(dict(
                 genHT_Emu=event.genSums_HT,
                 genMETHF_Emu=event.genSums_MetHF,
                 genMETBE_Emu=event.genSums_MetBE,
+                genMHT=event.genSums_MHT,
             ))
             online.update(dict(
                 genHT_Emu=event.l1EmuSums_Htt,
                 genMETHF_Emu=event.l1EmuSums_MetHF,
                 genMETBE_Emu=event.l1EmuSums_Met,
+                genMHT_Emu=event.l1EmuSums_Mht,
             ))
     return offline, online
 
@@ -247,6 +262,8 @@ class Analyzer(BaseAnalyzer):
                        "L1 Jet ET", 20, 420),
                 Config("pfJetET_HF", "Offline Forward PF Jet ET",
                        "L1 Jet ET", 20, 420),
+                Config("caloMHT", "Offline Calo MHT", "L1 MHT", 0, 400),
+                Config("pfMHT", "Offline PF MHT", "L1 MHT", 0, 400),
             ])
         if self._doGen:
             cfgs.extend([
@@ -265,6 +282,7 @@ class Analyzer(BaseAnalyzer):
                 Config("genHT", "Gen HT", "L1 HT", 30, 830),
                 Config("genMETHF", "Gen MET HF", "L1 MET HF", 0, 400),
                 Config("genMETBE", "Gen MET BE", "L1 MET BE", 0, 400),
+                Config("genMHT", "Gen MHT", "L1 MHT", 0, 400),
             ])
 
         self._plots_from_cfgs(cfgs, puBins)
@@ -349,6 +367,11 @@ class Analyzer(BaseAnalyzer):
                         puBins, thresholds, 105, 20, 2120
                     ]
                 if "MET" in cfg.name:
+                    params = [
+                        cfg.on_title, cfg.off_title + " (GeV)",
+                        puBins, thresholds, 100, 0, 2000
+                    ]
+                if "MHT" in cfg.name:
                     params = [
                         cfg.on_title, cfg.off_title + " (GeV)",
                         puBins, thresholds, 100, 0, 2000
@@ -680,12 +703,12 @@ class Analyzer(BaseAnalyzer):
             plot_names = [
                 'caloHT', 'pfHT', 'caloMETBE', 'caloMETHF',
                 'pfMET_NoMu', 'caloJetET_BE', 'caloJetET_HF',
-                'pfJetET_BE', 'pfJetET_HF'
+                'pfJetET_BE', 'pfJetET_HF', 'caloMHT', 'pfMHT',
             ]
 
         if self._doGen:
 
-            plot_names = ['genJetET_BE', 'genJetET_HF', 'genJetET_Barrel', 'genJetET_EndcapWithTracks', 'genJetET_EndcapNoTracks', 'genHT', 'genMETBE', 'genMETHF']
+            plot_names = ['genJetET_BE', 'genJetET_HF', 'genJetET_Barrel', 'genJetET_EndcapWithTracks', 'genJetET_EndcapNoTracks', 'genHT', 'genMETBE', 'genMETHF', 'genMHT', 'pfMHT',]
 
         for plot_name in plot_names:
             getattr(self, plot_name + '_eff').draw()
