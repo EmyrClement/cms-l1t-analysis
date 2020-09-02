@@ -14,6 +14,6 @@ class Producer(BaseProducer):
         setattr(event, self._outputs[0] + '_Met', Met(event[self._inputs[1]], 0.))
         setattr(event, self._outputs[0] + '_MetHF', Met(event['L1PhaseIPFJet_phaseIPFJetMETHF'], 0.))
         setattr(event, self._outputs[0] + '_Htt', EnergySum(event[self._inputs[0]]))
-        setattr(event, self._outputs[0] + '_Mht', Mht(event[self._inputs[*2*]], 0.))
+        setattr(event, self._outputs[0] + '_Mht', Mht(event[self._inputs[2]], 0.))
 
         return True
