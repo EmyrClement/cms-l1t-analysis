@@ -113,7 +113,7 @@ def extractSums(event, doEmu, doReco, doGen):
             genHT=event.genSums_HT,
             genMETHF=event.genSums_MetHF,
             genMETBE=event.genSums_MetBE,
-            genMHT=event.genSums_MHT,
+            genMHT=event.genSums_Mht,
         ))
         online.update(dict(
             genHT=event.l1Sums_Htt,
@@ -126,7 +126,7 @@ def extractSums(event, doEmu, doReco, doGen):
                 genHT_Emu=event.genSums_HT,
                 genMETHF_Emu=event.genSums_MetHF,
                 genMETBE_Emu=event.genSums_MetBE,
-                genMHT=event.genSums_MHT,
+                genMHT=event.genSums_Mht,
             ))
             online.update(dict(
                 genHT_Emu=event.l1EmuSums_Htt,
@@ -703,12 +703,12 @@ class Analyzer(BaseAnalyzer):
             plot_names = [
                 'caloHT', 'pfHT', 'caloMETBE', 'caloMETHF',
                 'pfMET_NoMu', 'caloJetET_BE', 'caloJetET_HF',
-                'pfJetET_BE', 'pfJetET_HF', 'caloMHT', 'pfMHT',
+                'pfJetET_BE', 'pfJetET_HF', 'caloMHT', 'pfMHT'
             ]
 
         if self._doGen:
 
-            plot_names = ['genJetET_BE', 'genJetET_HF', 'genJetET_Barrel', 'genJetET_EndcapWithTracks', 'genJetET_EndcapNoTracks', 'genHT', 'genMETBE', 'genMETHF', 'genMHT', 'pfMHT',]
+            plot_names = ['genJetET_BE', 'genJetET_HF', 'genJetET_Barrel', 'genJetET_EndcapWithTracks', 'genJetET_EndcapNoTracks', 'genHT', 'genMETBE', 'genMETHF', 'genMHT',]
 
         for plot_name in plot_names:
             getattr(self, plot_name + '_eff').draw()

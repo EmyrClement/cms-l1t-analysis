@@ -7,7 +7,7 @@ input:
       # ttbar MC
        # - /eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/bundocka/cmsl1t/p2jets.root
         # - /storage/ec6821/L1TJets/Analysis/cms-l1t-analysis/p2jets.root
-      - /storage/ec6821/L1TJets/Emulator/CMSSW_10_6_1_patch2/src/L1Trigger/L1CaloTrigger/test/L1Ntuple_7x7.root
+      - /scratch/th19168/CMSSW_10_6_1_patch2/src/L1Ntuple.root
   sample:
     name: ttbar
     title: MC
@@ -73,6 +73,7 @@ analysis:
       inputs:
         - L1PhaseIPFJet_genJetHt
         - L1PhaseIPFJet_genMet
+        - L1PhaseIPFJet_genJetMHT
       outputs:
         - genSums
     l1Sums:
@@ -80,6 +81,7 @@ analysis:
       inputs:
         - L1PhaseIPFJet_ak4PFJetHt
         - L1PhaseIPFJet_pfMet
+        - L1PhaseIPFJet_ak4PFJetMHT
       outputs:
         - l1Sums
     # l1EmuSums:
