@@ -5,7 +5,7 @@ input:
   files:
       # Zero Bias
        # - /eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/bundocka/cmsl1t/p2jets.root
-      - /storage/ec6821/L1TJets/Emulator/CMSSW_10_6_1_patch2/src/L1Trigger/L1CaloTrigger/test/L1Ntuple_Snu_9x9.root
+      - /scratch/th19168/CMSSW_10_6_1_patch2/src/L1Ntuple.root
 
   sample:
     name: nuGun
@@ -36,6 +36,8 @@ analysis:
     JetET_EndcapWithTracks_Emu: [100, 200]
     JetET_EndcapNoTracks:     [100, 200]
     JetET_EndcapNoTracks_Emu: [100, 200]
+    MHT:        [80, 150]
+
 # these are the fixed rates we want to use to
 # compare different emulations at different
 # thresholds that give this rate, from TDR Menu
@@ -48,6 +50,7 @@ analysis:
     JetET_Barrel:     70 # Same as BE, so wrong
     JetET_EndcapWithTracks:     70 # Same as BE, so wrong
     JetET_EndcapNoTracks:     70 # Same as BE, so wrong
+    MHT:        18
 
   analyzers:
      HW_Emu_jetMet_rates:
@@ -77,6 +80,7 @@ analysis:
       inputs:
         - L1PhaseIPFJet_genJetHt
         - L1PhaseIPFJet_genMet
+        - L1PhaseIPFJet_genJetMHT
       outputs:
         - genSums
     l1Sums:
@@ -84,6 +88,7 @@ analysis:
       inputs:
         - L1PhaseIPFJet_phaseIPFJetHt
         - L1PhaseIPFJet_phaseIPFJetMET
+        - L1PhaseIPFJet_phaseIPFJetMHT
       outputs:
         - l1Sums
 
