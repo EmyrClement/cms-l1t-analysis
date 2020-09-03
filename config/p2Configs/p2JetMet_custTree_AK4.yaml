@@ -35,6 +35,7 @@ analysis:
     JetET_EndcapWithTracks: [121]
     JetET_EndcapNoTracks: [121]
     JetET_HF:     [110]
+    MHT:        [103]
 
   analyzers:
      jetMet_analyzer:

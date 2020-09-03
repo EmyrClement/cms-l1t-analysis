@@ -20,7 +20,7 @@ from cmsl1t.utils.hist import normalise_to_collision_rate
 
 def types(doEmu):
 
-    sum_types = ["HT", "METBE", "METHF"]
+    sum_types = ["HT", "METBE", "METHF", "MHT",]
     jet_types = ["JetET_BE", "JetET_HF", "JetET_Barrel", "JetET_EndcapWithTracks", "JetET_EndcapNoTracks"]
 
     if doEmu:
@@ -34,12 +34,14 @@ def extractSums(event, doEmu):
     online = dict(
         HT=event.l1Sums_Htt,
         METBE=event.l1Sums_Met,
-        METHF=event.l1Sums_MetHF
+        METHF=event.l1Sums_MetHF,
+        MHT=event.l1Sums_Mht
     )
     if doEmu:
         online['HT_Emu'] = event.l1EmuSums_Htt
         online['METBE_Emu'] = event.l1EmuSums_Met
         online['METHF_Emu'] = event.l1EmuSums_MetHF
+        online['MHT_Emu'] = event.l1EmuSums_Mht
 
     return online
 
@@ -63,6 +65,8 @@ ETA_RANGES = dict(
     JetET_Barrel_Emu="|\\eta| < 1.5",
     JetET_EndcapWithTracks_Emu="1.5 < |\\eta| < 2.4",
     JetET_EndcapNoTracks_Emu="2.4 < |\\eta| < 3.0",
+    MHT="|\\eta| < 3.0",
+    MHT_Emu='|\\eta| < 3.0'
 )
 
 
